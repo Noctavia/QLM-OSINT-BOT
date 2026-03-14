@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QLM Bot — by Noctavia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100;300;400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+:root {
+  --bg:      #05050a;
+  --surface: #08080f;
+  --fg:      #c8c7d4;
+  --dim:     #38384a;
+  --ghost:   #18181f;
+  --rose:    #c9a0b4;
+  --ice:     #9ab8d4;
+  --gold:    #c8b084;
+  --glow-r:  rgba(201,160,180,0.08);
+  --glow-i:  rgba(154,184,212,0.08);
+  --line:    rgba(255,255,255,0.055);
+  --mono:    'Share Tech Mono', monospace;
+  --serif:   'Cormorant Garamond', serif;
+  --jp:      'Noto Sans JP', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--jp);
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.9;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* ── GRAIN ────────────────────────────── */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  pointer-events:none; z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:.55; mix-blend-mode:overlay;
+}
+
+/* ── AMBIENT ORBS ──────────────────────── */
+.orb {
+  position:fixed; border-radius:50%;
+  pointer-events:none; z-index:0;
+  filter:blur(120px);
+}
+.orb-1 {
+  width:600px; height:600px;
+  background:var(--glow-r);
+  top:-200px; right:-100px;
+  animation: drift1 18s ease-in-out infinite alternate;
+}
+.orb-2 {
+  width:500px; height:500px;
+  background:var(--glow-i);
+  bottom:-150px; left:-80px;
+  animation: drift2 22s ease-in-out infinite alternate;
+}
+@keyframes drift1 { from{transform:translate(0,0)} to{transform:translate(-60px,80px)} }
+@keyframes drift2 { from{transform:translate(0,0)} to{transform:translate(80px,-60px)} }
+
+/* ── NAV ───────────────────────────────── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  padding:26px 64px;
+  display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(to bottom, rgba(5,5,10,0.9), transparent);
+  backdrop-filter:blur(2px);
+}
+.nav-logo {
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.35em;
+  color:var(--dim);
+}
+.nav-logo b { color:var(--rose); font-weight:400; }
+.nav-right {
+  display:flex; align-items:center; gap:40px;
+}
+.nav-links { display:flex; gap:32px; list-style:none; }
+.nav-links a {
+  font-family:var(--mono); font-size:9px;
+  letter-spacing:.25em; color:var(--dim);
+  text-decoration:none; text-transform:uppercase;
+  transition:color .3s;
+}
+.nav-links a:hover { color:var(--fg); }
+.nav-cta {
+  font-family:var(--mono); font-size:9px;
+  letter-spacing:.2em; color:var(--rose);
+  text-decoration:none; text-transform:uppercase;
+  border-bottom:1px solid rgba(201,160,180,.3);
+  padding-bottom:2px;
+  transition:color .3s, border-color .3s;
+}
+.nav-cta:hover { color:#e0b8cc; border-color:var(--rose); }
+
+/* ── HERO ───────────────────────────────── */
+.hero {
+  min-height:100vh;
+  display:flex; flex-direction:column; justify-content:flex-end;
+  padding:0 64px 80px;
+  position:relative; overflow:hidden;
+}
+
+/* SVG constellation / grid */
+.hero-canvas {
+  position:absolute; inset:0; pointer-events:none; z-index:1;
+}
+
+/* Watermark kanji */
+.hero-kanji {
+  position:absolute;
+  top:50%; right:48px;
+  transform:translateY(-52%);
+  font-family:var(--jp); font-weight:100;
+  font-size:clamp(320px,40vw,560px);
+  line-height:1;
+  color:rgba(255,255,255,0.013);
+  pointer-events:none; user-select:none;
+  letter-spacing:-.05em;
+  z-index:1;
+}
+
+/* Thin horizontal rule mid-hero */
+.hero-rule {
+  position:absolute;
+  left:64px; right:64px;
+  top:50%;
+  height:1px;
+  background:var(--line);
+  z-index:1;
+}
+
+.hero-content { position:relative; z-index:2; }
+
+.hero-tag {
+  display:inline-flex; align-items:center; gap:14px;
+  font-family:var(--mono); font-size:9px;
+  letter-spacing:.4em; color:var(--dim);
+  text-transform:uppercase;
+  margin-bottom:48px;
+}
+.hero-tag::before { content:''; width:36px; height:1px; background:var(--dim); }
+.live-dot {
+  display:inline-flex; align-items:center; gap:7px;
+  color:var(--ice);
+}
+.live-dot::before {
+  content:''; width:4px; height:4px; border-radius:50%;
+  background:var(--ice);
+  box-shadow:0 0 8px var(--ice);
+  animation:blink 2.4s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+.hero-title {
+  font-family:var(--serif);
+  font-size:clamp(68px,10vw,128px);
+  font-weight:300;
+  line-height:.92;
+  color:#fff;
+  letter-spacing:-.02em;
+  margin-bottom:12px;
+}
+.hero-title em { font-style:italic; color:var(--rose); }
+.hero-title .outline {
+  -webkit-text-stroke:1px rgba(255,255,255,.2);
+  color:transparent;
+}
+
+.hero-jp {
+  font-family:var(--jp); font-weight:100;
+  font-size:10px; letter-spacing:.55em;
+  color:var(--dim); margin-bottom:52px;
+}
+
+.hero-row {
+  display:flex; align-items:flex-end;
+  justify-content:space-between; flex-wrap:wrap; gap:40px;
+}
+.hero-desc {
+  max-width:420px; font-size:13px;
+  line-height:2.1; color:#4a4a60;
+  font-weight:300;
+}
+.hero-desc strong { color:var(--fg); font-weight:400; }
+
+.hero-stats {
+  display:flex; gap:48px; flex-wrap:wrap;
+  align-items:flex-end;
+}
+.stat {}
+.stat-n {
+  font-family:var(--serif); font-style:italic;
+  font-size:44px; color:#fff; display:block;
+  line-height:1;
+}
+.stat-n sup { font-size:22px; color:var(--rose); font-style:normal; }
+.stat-l {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.3em; color:var(--dim);
+  text-transform:uppercase; margin-top:5px; display:block;
+}
+
+.hero-scroll {
+  position:absolute; bottom:36px; right:64px; z-index:2;
+  display:flex; flex-direction:column; align-items:flex-end; gap:5px;
+}
+.scroll-line {
+  width:1px; height:60px;
+  background:linear-gradient(to bottom, transparent, var(--dim));
+  animation:scrollPulse 2.5s ease-in-out infinite;
+}
+@keyframes scrollPulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+.scroll-txt {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.3em; color:var(--dim);
+  text-transform:uppercase;
+  writing-mode:vertical-rl;
+  text-orientation:mixed;
+  transform:rotate(180deg);
+}
+
+/* ── DIVIDERS ───────────────────────────── */
+.hr { border:none; border-top:1px solid var(--line); }
+
+/* ── MARQUEE ────────────────────────────── */
+.marquee {
+  overflow:hidden;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:14px 0;
+  background:rgba(255,255,255,0.012);
+}
+.marquee-inner {
+  display:flex; width:max-content;
+  animation:scroll 30s linear infinite;
+}
+.marquee-inner span {
+  font-family:var(--mono); font-size:9px;
+  letter-spacing:.25em; color:var(--dim);
+  padding:0 28px; white-space:nowrap;
+  text-transform:uppercase;
+}
+.marquee-inner span.c { color:var(--rose); }
+.marquee-inner span.ci { color:var(--ice); }
+@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* ── SECTIONS ───────────────────────────── */
+section { padding:120px 64px; position:relative; z-index:2; }
+.alt-bg { background:var(--surface); }
+
+.sec-label {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.45em; color:var(--dim);
+  text-transform:uppercase; margin-bottom:64px;
+  display:flex; align-items:center; gap:18px;
+}
+.sec-label::after { content:''; flex:1; height:1px; background:var(--line); max-width:180px; }
+
+.sec-title {
+  font-family:var(--serif);
+  font-size:clamp(36px,4.5vw,58px);
+  font-weight:300; color:#fff;
+  line-height:1.1; margin-bottom:24px;
+}
+.sec-title em { font-style:italic; color:var(--rose); }
+.sec-title .ice { color:var(--ice); }
+
+/* ── MODULES TABLE ──────────────────────── */
+.mod-table { margin-top:64px; }
+.mod-row {
+  display:grid;
+  grid-template-columns:160px 1fr 220px;
+  gap:0 56px;
+  align-items:start;
+  padding:32px 0;
+  border-bottom:1px solid var(--line);
+  transition:background .25s;
+  cursor:default;
+  position:relative;
+}
+.mod-row::before {
+  content:'';
+  position:absolute; left:-64px; right:-64px; top:0; bottom:0;
+  background:rgba(255,255,255,0);
+  transition:background .3s;
+  pointer-events:none;
+}
+.mod-row:hover::before { background:rgba(255,255,255,0.012); }
+.mod-row:first-child { border-top:1px solid var(--line); }
+
+.mod-no {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.3em; color:var(--dim);
+  padding-top:5px;
+}
+.mod-title {
+  font-family:var(--serif); font-size:24px;
+  font-weight:300; color:#fff;
+  margin-bottom:8px; line-height:1.05;
+}
+.mod-title em { font-style:italic; color:var(--rose); }
+.mod-title .i { color:var(--ice); }
+.mod-desc { font-size:11.5px; color:#3e3e52; line-height:2; }
+
+.mod-cmds {
+  display:flex; flex-direction:column;
+  align-items:flex-end; gap:4px;
+  padding-top:4px;
+}
+.mod-cmd {
+  font-family:var(--mono); font-size:9.5px;
+  color:var(--dim); letter-spacing:.04em;
+  transition:color .2s;
+}
+.mod-row:hover .mod-cmd { color:var(--ice); }
+.mod-count {
+  font-family:var(--mono); font-size:8px;
+  color:var(--dim); letter-spacing:.2em;
+  text-align:right;
+  border-top:1px solid var(--line);
+  padding-top:7px; margin-top:5px; width:100%;
+}
+
+/* ── FEATURES ───────────────────────────── */
+.feat-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:0; margin-top:64px;
+}
+.feat {
+  padding:48px 0; border-bottom:1px solid var(--line);
+  padding-right:56px;
+  position:relative; overflow:hidden;
+}
+.feat:nth-child(even) { padding-left:56px; padding-right:0; border-left:1px solid var(--line); }
+
+/* Hover accent line */
+.feat::after {
+  content:'';
+  position:absolute; top:0; left:0; right:0;
+  height:1px;
+  background:linear-gradient(90deg, var(--rose), var(--ice));
+  transform:scaleX(0); transform-origin:left;
+  transition:transform .5s cubic-bezier(.16,1,.3,1);
+}
+.feat:hover::after { transform:scaleX(1); }
+.feat:nth-child(even)::after { transform-origin:right; }
+
+.feat-no {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.3em; color:var(--dim); margin-bottom:18px;
+}
+.feat-title {
+  font-family:var(--serif); font-size:21px;
+  font-weight:300; color:#fff;
+  margin-bottom:12px; line-height:1.15;
+}
+.feat-title em { font-style:italic; color:var(--ice); }
+.feat-desc { font-size:11.5px; color:#3e3e52; line-height:2; }
+
+/* ── COMMANDS LIST ──────────────────────── */
+.cmd-grid {
+  margin-top:64px;
+  display:grid; grid-template-columns:1fr 1fr; gap:0;
+}
+.cmd-row {
+  display:flex; align-items:baseline; gap:16px;
+  padding:14px 0; border-bottom:1px solid var(--line);
+  transition:background .2s;
+}
+.cmd-row:hover { background:rgba(255,255,255,0.012); }
+.cmd-row:nth-child(even) { padding-left:36px; border-left:1px solid var(--line); }
+.cmd-name {
+  font-family:var(--mono); font-size:11px;
+  color:var(--rose); min-width:128px; flex-shrink:0;
+  letter-spacing:.03em;
+}
+.cmd-info { font-size:10.5px; color:#404058; line-height:1.6; }
+.cmd-cat {
+  font-family:var(--mono); font-size:7px;
+  letter-spacing:.15em; color:var(--dim);
+  border:1px solid var(--line);
+  padding:2px 6px; margin-left:auto; flex-shrink:0;
+  text-transform:uppercase;
+}
+
+/* ── PROTECTION ─────────────────────────── */
+.prot-list { margin-top:64px; }
+.prot-row {
+  display:grid;
+  grid-template-columns:180px 1fr 100px;
+  gap:0 56px;
+  align-items:center;
+  padding:20px 0;
+  border-bottom:1px solid var(--line);
+  position:relative;
+  transition:background .2s;
+}
+.prot-row:hover { background:rgba(255,255,255,.01); }
+.prot-row:first-child { border-top:1px solid var(--line); }
+
+/* Left accent */
+.prot-row::before {
+  content:'';
+  position:absolute; left:-64px; top:0; bottom:0; width:1px;
+  background:linear-gradient(to bottom, transparent, var(--rose), transparent);
+  opacity:0; transition:opacity .3s;
+}
+.prot-row:hover::before { opacity:.4; }
+
+.prot-key { font-family:var(--mono); font-size:8px; letter-spacing:.22em; color:var(--dim); text-transform:uppercase; }
+.prot-name { font-family:var(--mono); font-size:12px; color:var(--fg); letter-spacing:.04em; }
+.prot-desc { font-size:10.5px; color:#3a3a50; margin-top:2px; }
+.prot-on {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.22em; text-transform:uppercase;
+  color:var(--ice); text-align:right;
+  display:flex; align-items:center; justify-content:flex-end; gap:7px;
+}
+.prot-on::before {
+  content:''; width:4px; height:4px; border-radius:50%;
+  background:var(--ice); box-shadow:0 0 7px var(--ice);
+  animation:blink 2.8s ease infinite;
+  flex-shrink:0;
+}
+
+/* ── TERMINAL ───────────────────────────── */
+.term-wrap { max-width:700px; margin:64px auto 0; }
+.term-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding-bottom:16px; border-bottom:1px solid var(--line);
+  margin-bottom:28px;
+}
+.term-id { font-family:var(--mono); font-size:8px; letter-spacing:.32em; color:var(--dim); text-transform:uppercase; }
+.term-live {
+  font-family:var(--mono); font-size:8px; letter-spacing:.2em;
+  color:var(--ice); display:flex; align-items:center; gap:7px;
+}
+.term-live::before {
+  content:''; width:4px; height:4px; border-radius:50%;
+  background:var(--ice); animation:blink 2s ease infinite;
+}
+.term-body { font-family:var(--mono); font-size:11.5px; line-height:2.3; }
+.tp  { color:var(--ice); }
+.tc  { color:#bebede; }
+.to  { color:#404050; padding-left:16px; }
+.tk  { color:#6a6a88; }
+.tv  { color:var(--fg); }
+.tg  { color:var(--ice); }
+.tr  { color:var(--rose); }
+.tdim{ color:#2a2a38; }
+.tcur {
+  display:inline-block; width:6px; height:11px;
+  background:var(--rose); vertical-align:middle;
+  animation:blink 1s step-end infinite; margin-left:1px;
+}
+
+/* ── CREATOR ────────────────────────────── */
+.creator-section {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:120px;
+  align-items:center;
+}
+.creator-visual {
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+}
+.creator-ring {
+  width:260px; height:260px;
+  border:1px solid var(--line);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.creator-ring::before {
+  content:'';
+  position:absolute; inset:-12px;
+  border:1px solid rgba(201,160,180,.12);
+  border-radius:50%;
+  animation:spinRing 20s linear infinite;
+}
+.creator-ring::after {
+  content:'';
+  position:absolute; inset:-28px;
+  border:1px dashed rgba(154,184,212,.07);
+  border-radius:50%;
+  animation:spinRing 35s linear infinite reverse;
+}
+@keyframes spinRing { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* Orbit dot */
+.orbit-dot {
+  position:absolute;
+  width:5px; height:5px; border-radius:50%;
+  background:var(--rose);
+  box-shadow:0 0 10px var(--rose);
+  top:calc(50% - 140px); left:50%;
+  transform:translateX(-50%);
+  transform-origin:0 140px;
+  animation:orbit 8s linear infinite;
+}
+@keyframes orbit { from{transform:translateX(-50%) rotate(0deg) translateY(-140px) rotate(0deg)} to{transform:translateX(-50%) rotate(360deg) translateY(-140px) rotate(-360deg)} }
+
+.creator-name {
+  font-family:var(--serif); font-style:italic;
+  font-size:42px; font-weight:300; color:#fff;
+  text-align:center; line-height:1;
+}
+.creator-sub {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.4em; color:var(--dim);
+  text-transform:uppercase; text-align:center;
+  margin-top:10px;
+}
+
+.creator-content {}
+.creator-label {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.4em; color:var(--dim);
+  text-transform:uppercase; margin-bottom:28px;
+  display:flex; align-items:center; gap:14px;
+}
+.creator-label::before { content:''; width:28px; height:1px; background:var(--dim); }
+
+.creator-title {
+  font-family:var(--serif); font-size:clamp(28px,3vw,42px);
+  font-weight:300; color:#fff; line-height:1.15;
+  margin-bottom:28px;
+}
+.creator-title em { font-style:italic; color:var(--rose); }
+
+.creator-text {
+  font-size:12px; color:#3e3e54; line-height:2.2;
+  max-width:400px; margin-bottom:36px;
+}
+.creator-text strong { color:var(--fg); font-weight:400; }
+
+.creator-details { display:flex; flex-direction:column; gap:0; }
+.creator-detail {
+  display:flex; align-items:baseline; gap:20px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+}
+.creator-detail:first-child { border-top:1px solid var(--line); }
+.detail-k { font-family:var(--mono); font-size:8px; letter-spacing:.25em; color:var(--dim); text-transform:uppercase; min-width:100px; }
+.detail-v { font-family:var(--mono); font-size:10px; color:var(--fg); letter-spacing:.05em; }
+.detail-v.rose { color:var(--rose); }
+
+/* ── FOOTER ─────────────────────────────── */
+footer {
+  padding:90px 64px 50px;
+  border-top:1px solid var(--line);
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:56px;
+  align-items:end;
+  position:relative; z-index:2;
+}
+.foot-brand {
+  font-family:var(--serif); font-size:48px;
+  font-weight:300; color:#fff; line-height:1;
+  display:block; margin-bottom:12px;
+}
+.foot-brand em { font-style:italic; color:var(--rose); }
+.foot-by {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.4em; color:var(--dim);
+}
+.foot-by span { color:var(--rose); }
+.foot-col-h {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.35em; color:var(--dim);
+  text-transform:uppercase; margin-bottom:18px;
+}
+.foot-col ul { list-style:none; }
+.foot-col li {
+  font-family:var(--mono); font-size:9.5px;
+  color:#2c2c3e; letter-spacing:.08em;
+  padding:5px 0; border-bottom:1px solid rgba(255,255,255,.025);
+}
+.foot-col li span { color:var(--dim); margin-right:10px; }
+.foot-bottom {
+  grid-column:1/-1;
+  border-top:1px solid var(--line);
+  padding-top:26px;
+  display:flex; justify-content:space-between;
+  align-items:center;
+}
+.foot-copy {
+  font-family:var(--mono); font-size:8px;
+  letter-spacing:.2em; color:var(--dim);
+}
+.foot-jp {
+  font-family:var(--jp); font-weight:100;
+  font-size:9px; letter-spacing:.5em; color:var(--dim);
+}
+
+/* ── SCROLL REVEAL ──────────────────────── */
+.rv {
+  opacity:0; transform:translateY(24px);
+  transition:opacity 1s cubic-bezier(.16,1,.3,1), transform 1s cubic-bezier(.16,1,.3,1);
+}
+.rv.in { opacity:1; transform:translateY(0); }
+.d1{transition-delay:.07s}.d2{transition-delay:.14s}.d3{transition-delay:.21s}
+.d4{transition-delay:.28s}.d5{transition-delay:.35s}
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width:768px) {
+  section, .hero, footer { padding-left:24px; padding-right:24px; }
+  nav { padding:22px 24px; }
+  .nav-links, .nav-cta { display:none; }
+  .hero-title { font-size:clamp(52px,13vw,80px); }
+  .mod-row, .feat-grid, .cmd-grid, footer { grid-template-columns:1fr; }
+  .feat:nth-child(even) { padding-left:0; border-left:none; }
+  .cmd-row:nth-child(even) { padding-left:0; border-left:none; }
+  .prot-row { grid-template-columns:1fr; gap:4px; }
+  .creator-section { grid-template-columns:1fr; gap:60px; }
+  .hero-scroll { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">QLM <b>·</b> BOT <b>/</b> SYSTEM</div>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="#modules">Modules</a></li>
+      <li><a href="#protection">Protection</a></li>
+      <li><a href="#creator">Créateur</a></li>
+      <li><a href="#demo">Demo</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Ajouter sur Discord →</a>
+  </div>
+</nav>
+
+<!-- ════ HERO ════ -->
+<section class="hero">
+
+  <!-- SVG grid lines -->
+  <svg class="hero-canvas" viewBox="0 0 1440 900" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- vertical lines -->
+    <line x1="360" y1="0" x2="360" y2="900" stroke="rgba(255,255,255,0.028)" stroke-width="1"/>
+    <line x1="720" y1="0" x2="720" y2="900" stroke="rgba(255,255,255,0.022)" stroke-width="1"/>
+    <line x1="1080" y1="0" x2="1080" y2="900" stroke="rgba(255,255,255,0.028)" stroke-width="1"/>
+    <!-- horizontal line -->
+    <line x1="0" y1="450" x2="1440" y2="450" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    <!-- corner marks -->
+    <path d="M64,64 L104,64 M64,64 L64,104" stroke="rgba(201,160,180,0.18)" stroke-width="1" fill="none"/>
+    <path d="M1376,64 L1336,64 M1376,64 L1376,104" stroke="rgba(201,160,180,0.18)" stroke-width="1" fill="none"/>
+    <path d="M64,836 L104,836 M64,836 L64,796" stroke="rgba(201,160,180,0.18)" stroke-width="1" fill="none"/>
+    <path d="M1376,836 L1336,836 M1376,836 L1376,796" stroke="rgba(201,160,180,0.18)" stroke-width="1" fill="none"/>
+    <!-- cross hair -->
+    <circle cx="720" cy="450" r="3" fill="none" stroke="rgba(154,184,212,0.15)" stroke-width="1"/>
+    <line x1="706" y1="450" x2="714" y2="450" stroke="rgba(154,184,212,0.15)" stroke-width="1"/>
+    <line x1="726" y1="450" x2="734" y2="450" stroke="rgba(154,184,212,0.15)" stroke-width="1"/>
+    <line x1="720" y1="436" x2="720" y2="444" stroke="rgba(154,184,212,0.15)" stroke-width="1"/>
+    <line x1="720" y1="456" x2="720" y2="464" stroke="rgba(154,184,212,0.15)" stroke-width="1"/>
+  </svg>
+
+  <div class="hero-kanji">調査</div>
+
+  <div class="hero-content">
+    <div class="hero-tag">
+      <span class="live-dot">En ligne</span>
+      discord · osint · v3.0
+    </div>
+
+    <h1 class="hero-title">
+      QLM<br><em>Bot</em><span class="outline">.</span>
+    </h1>
+
+    <p class="hero-jp">オープンソースインテリジェンス　·　サイバーセキュリティ　·　サーバー管理</p>
+
+    <div class="hero-row">
+      <p class="hero-desc">
+        Un bot Discord conçu pour <strong>l'investigation numérique,
+        la cybersécurité et la gestion de serveur.</strong>
+        Créé par <strong>Noctavia</strong> — plus de 70 commandes, 13 catégories.
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-n">70<sup>+</sup></span>
+          <span class="stat-l">Commandes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n">13</span>
+          <span class="stat-l">Catégories</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n">600<sup>+</sup></span>
+          <span class="stat-l">Sites OSINT</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n">10</span>
+          <span class="stat-l">Modules sécu</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <div class="scroll-txt">scroll</div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- MARQUEE -->
+<div class="marquee">
+  <div class="marquee-inner">
+    <span class="c">!whois</span><span>osint</span>
+    <span class="ci">!sherlock</span><span>username</span>
+    <span class="c">!portscan</span><span>ports</span>
+    <span class="ci">!vulnscan</span><span>owasp</span>
+    <span class="c">!tokeninfo</span><span>discord</span>
+    <span class="ci">!ghuser</span><span>github</span>
+    <span class="c">!antinuke</span><span>protection</span>
+    <span class="ci">!fakeid</span><span>anonymat</span>
+    <span class="c">!dns</span><span>records</span>
+    <span class="ci">!sslcheck</span><span>ssl / tls</span>
+    <span class="c">!whatsmyname</span><span>600+ sites</span>
+    <span class="ci">!dork</span><span>google dorks</span>
+    <span class="c">!whois</span><span>osint</span>
+    <span class="ci">!sherlock</span><span>username</span>
+    <span class="c">!portscan</span><span>ports</span>
+    <span class="ci">!vulnscan</span><span>owasp</span>
+    <span class="c">!tokeninfo</span><span>discord</span>
+    <span class="ci">!ghuser</span><span>github</span>
+    <span class="c">!antinuke</span><span>protection</span>
+    <span class="ci">!fakeid</span><span>anonymat</span>
+    <span class="c">!dns</span><span>records</span>
+    <span class="ci">!sslcheck</span><span>ssl / tls</span>
+    <span class="c">!whatsmyname</span><span>600+ sites</span>
+    <span class="ci">!dork</span><span>google dorks</span>
+  </div>
+</div>
+
+<!-- ════ MODULES ════ -->
+<section id="modules">
+  <div class="sec-label rv">01 — Modules</div>
+  <div class="sec-title rv d1">Toutes les disciplines,<br><em>réunies.</em></div>
+
+  <div class="mod-table">
+    <div class="mod-row rv d1">
+      <div><div class="mod-no">01 / URL</div></div>
+      <div>
+        <div class="mod-title">Analyse <em>d'URL</em></div>
+        <div class="mod-desc">Headers HTTP complets, score de risque OWASP, hash favicon Shodan,<br>détection de secrets dans les fichiers JS, déreirectionnement complet.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!headers</span><span class="mod-cmd">!siterisk</span>
+        <span class="mod-cmd">!jssecrets</span><span class="mod-cmd">!faviconhash</span>
+        <span class="mod-cmd">!unshorten</span>
+        <div class="mod-count">6 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d2">
+      <div><div class="mod-no">02 / DOMAIN</div></div>
+      <div>
+        <div class="mod-title">Domaine &amp; <em>DNS</em></div>
+        <div class="mod-desc">WHOIS complet, bruteforce de sous-domaines, analyse SSL/TLS, HSTS,<br>enregistrements DNS exhaustifs, détection de fichiers sensibles exposés.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!whois</span><span class="mod-cmd">!subdomain</span>
+        <span class="mod-cmd">!sslcheck</span><span class="mod-cmd">!dns</span>
+        <span class="mod-cmd">!exposedfiles</span>
+        <div class="mod-count">7 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d3">
+      <div><div class="mod-no">03 / IP</div></div>
+      <div>
+        <div class="mod-title">Intelligence <i class="i">IP</i></div>
+        <div class="mod-desc">Géolocalisation précise, ASN, organisation, scan des 23 ports communs,<br>reverse IP lookup, détection VPN / Proxy / Datacenter.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!ip</span><span class="mod-cmd">!portscan</span>
+        <span class="mod-cmd">!reverseip</span><span class="mod-cmd">!vpncheck</span>
+        <div class="mod-count">4 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d1">
+      <div><div class="mod-no">04 / OSINT</div></div>
+      <div>
+        <div class="mod-title"><em>OSINT</em> General</div>
+        <div class="mod-desc">Username sur 18+ plateformes, scraping Instagram, email, BIN bancaire,<br>adresse MAC, métadonnées EXIF, 16 Google Dorks, scan multi-sources.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!checku</span><span class="mod-cmd">!emailinfo</span>
+        <span class="mod-cmd">!dork</span><span class="mod-cmd">!metadata</span>
+        <span class="mod-cmd">!scanall</span>
+        <div class="mod-count">15 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d2">
+      <div><div class="mod-no">05 / ANON</div></div>
+      <div>
+        <div class="mod-title"><em>Anonymat</em></div>
+        <div class="mod-desc">Guide OPSEC complet en MP, email temporaire 1h, mots de passe forts,<br>suppression EXIF, fausse identité FR complète avec avatar généré.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!opsec</span><span class="mod-cmd">!tempmail</span>
+        <span class="mod-cmd">!fakeid</span><span class="mod-cmd">!clearmeta</span>
+        <span class="mod-cmd">!password</span>
+        <div class="mod-count">5 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d3">
+      <div><div class="mod-no">06 / SEC</div></div>
+      <div>
+        <div class="mod-title"><em>Sécurité</em></div>
+        <div class="mod-desc">Scan OWASP, détection WAF (Cloudflare, Akamai, F5…), fingerprint CMS,<br>hashing MD5/SHA, payloads reverse shell multi-langages envoyés en MP.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!vulnscan</span><span class="mod-cmd">!waf</span>
+        <span class="mod-cmd">!cms</span><span class="mod-cmd">!revshell</span>
+        <span class="mod-cmd">!hash</span>
+        <div class="mod-count">6 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d1">
+      <div><div class="mod-no">07 / DISCORD</div></div>
+      <div>
+        <div class="mod-title">Discord <em>Tools</em></div>
+        <div class="mod-desc">Analyse tokens (profil, email, guildes, connexions tierces), webhooks,<br>infos serveur, status rotator automatique, signalement officiel.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!tokeninfo</span><span class="mod-cmd">!webhookinfo</span>
+        <span class="mod-cmd">!tokencheck</span><span class="mod-cmd">!serverinfo</span>
+        <div class="mod-count">8 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d2">
+      <div><div class="mod-no">08 / GITHUB</div></div>
+      <div>
+        <div class="mod-title">GitHub <em>OSINT</em></div>
+        <div class="mod-desc">Profil complet avec langages, recherche par email, extraction d'adresses<br>depuis les commits de 20 dépôts, clés GPG (email décodé) et SSH.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!ghuser</span><span class="mod-cmd">!ghemail</span>
+        <span class="mod-cmd">!ghrepos</span><span class="mod-cmd">!ghkeys</span>
+        <div class="mod-count">5 commandes</div>
+      </div>
+    </div>
+    <div class="mod-row rv d3">
+      <div><div class="mod-no">09 / INVEST</div></div>
+      <div>
+        <div class="mod-title"><em>Investigations</em></div>
+        <div class="mod-desc">WhatsMyName 600+ sites, Sherlock 28 plateformes, SocialScan double,<br>Gmail check heuristique, Google Docs OSINT, météo historique.</div>
+      </div>
+      <div class="mod-cmds">
+        <span class="mod-cmd">!sherlock</span><span class="mod-cmd">!whatsmyname</span>
+        <span class="mod-cmd">!socialscan</span><span class="mod-cmd">!xeuledoc</span>
+        <div class="mod-count">6 commandes</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ FEATURES ════ -->
+<section class="alt-bg" id="features">
+  <div class="sec-label rv">02 — Conception</div>
+  <div class="sec-title rv d1">Engineered for<br><span class="ice">precision.</span></div>
+
+  <div class="feat-grid">
+    <div class="feat rv d1">
+      <div class="feat-no">01</div>
+      <div class="feat-title">Entièrement <em>asynchrone</em></div>
+      <div class="feat-desc">Requêtes réseau parallèles via aiohttp. Scan de 23 ports, recherche sur 600+ sites — en quelques secondes sans bloquer le bot.</div>
+    </div>
+    <div class="feat rv d2">
+      <div class="feat-no">02</div>
+      <div class="feat-title">Données <em>persistantes</em></div>
+      <div class="feat-desc">SQLite3 intégré. Protections, whitelist, flags, tâches et configurations survivent aux redémarrages sans configuration externe.</div>
+    </div>
+    <div class="feat rv d3">
+      <div class="feat-no">03</div>
+      <div class="feat-title">Confidentialité <em>by design</em></div>
+      <div class="feat-desc">Tokens, mots de passe et résultats sensibles transmis exclusivement en message privé. Le message public est supprimé immédiatement.</div>
+    </div>
+    <div class="feat rv d4">
+      <div class="feat-no">04</div>
+      <div class="feat-title">Interface <em>interactive</em></div>
+      <div class="feat-desc">Pagination automatique, tableaux de bord temps réel, boutons de confirmation, sélecteurs de catégories — Discord natif.</div>
+    </div>
+    <div class="feat rv d1">
+      <div class="feat-no">05</div>
+      <div class="feat-title">Architecture <em>modulaire</em></div>
+      <div class="feat-desc">Chaque module de protection s'active indépendamment. Une seule commande <code style="font-family:var(--mono);font-size:10px;color:var(--ice)">!secur max</code> active tout simultanément.</div>
+    </div>
+    <div class="feat rv d2">
+      <div class="feat-no">06</div>
+      <div class="feat-title">Sources <em>multiples</em></div>
+      <div class="feat-desc">ipapi.co · HackerTarget · GitHub API · Open-Meteo · Guerrillamail · Wayback Machine · binlist · macvendors — agrégés nativement.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ COMMANDS ════ -->
+<section>
+  <div class="sec-label rv">03 — Commandes phares</div>
+  <div class="sec-title rv d1">Chaque commande,<br>une <em>discipline.</em></div>
+
+  <div class="cmd-grid rv d2">
+    <div class="cmd-row"><span class="cmd-name">!sherlock</span><span class="cmd-info">Username · 28 plateformes majeures</span><span class="cmd-cat">osint</span></div>
+    <div class="cmd-row"><span class="cmd-name">!whatsmyname</span><span class="cmd-info">Username · 600+ sites open-source</span><span class="cmd-cat">osint</span></div>
+    <div class="cmd-row"><span class="cmd-name">!vulnscan</span><span class="cmd-info">Scan OWASP headers, SQL, LFI, dir listing</span><span class="cmd-cat">sec</span></div>
+    <div class="cmd-row"><span class="cmd-name">!tokeninfo</span><span class="cmd-info">Profil complet, email, guildes, liaisons</span><span class="cmd-cat">discord</span></div>
+    <div class="cmd-row"><span class="cmd-name">!ghrepos</span><span class="cmd-info">Scan 20 repos → extraction emails commits</span><span class="cmd-cat">github</span></div>
+    <div class="cmd-row"><span class="cmd-name">!exposedfiles</span><span class="cmd-info">.env · .git · wp-config · phpinfo…</span><span class="cmd-cat">sec</span></div>
+    <div class="cmd-row"><span class="cmd-name">!fakeid</span><span class="cmd-info">Identité : nom, IBAN, métier, avatar</span><span class="cmd-cat">anon</span></div>
+    <div class="cmd-row"><span class="cmd-name">!dork</span><span class="cmd-info">Génère 16 Google Dorks ciblés</span><span class="cmd-cat">osint</span></div>
+    <div class="cmd-row"><span class="cmd-name">!bl</span><span class="cmd-info">Ban permanent avec re-ban automatique</span><span class="cmd-cat">admin</span></div>
+    <div class="cmd-row"><span class="cmd-name">!revshell</span><span class="cmd-info">Payloads Bash · Python · PHP · Netcat</span><span class="cmd-cat">sec</span></div>
+    <div class="cmd-row"><span class="cmd-name">!scanall</span><span class="cmd-info">DNS + WHOIS + IP + SSL — embed unique</span><span class="cmd-cat">osint</span></div>
+    <div class="cmd-row"><span class="cmd-name">!secur max</span><span class="cmd-info">Active simultanément tous les modules</span><span class="cmd-cat">prot</span></div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ PROTECTION ════ -->
+<section class="alt-bg" id="protection">
+  <div class="sec-label rv">04 — Protection</div>
+  <div class="sec-title rv d1">10 modules.<br>Un <em>tableau de bord.</em></div>
+
+  <div class="prot-list rv d2">
+    <div class="prot-row"><div class="prot-key">antispam</div><div><div class="prot-name">Anti-Spam</div><div class="prot-desc">Mute automatique 5 min au-delà de 5 messages en 5 secondes.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antiphish</div><div><div class="prot-name">Anti-Phishing</div><div class="prot-desc">Détecte et supprime les liens phishing connus. Mute 1 heure.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antinuke</div><div><div class="prot-name">Anti-Nuke</div><div class="prot-desc">Log les suppressions massives de salons et les bans anormaux.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antibot</div><div><div class="prot-name">Anti-Bot</div><div class="prot-desc">Kick automatique des bots absents de la liste autorisée.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antilink</div><div><div class="prot-name">Anti-Lien</div><div class="prot-desc">Supprime tout message contenant un lien HTTP(S).</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antiinvite</div><div><div class="prot-name">Anti-Invitation</div><div class="prot-desc">Bloque les liens d'invitation Discord dans les messages.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">antimalware</div><div><div class="prot-name">Anti-Malware</div><div class="prot-desc">Bloque les liens vers fichiers exécutables (.exe, .bat, .ps1…).</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">sentinel</div><div><div class="prot-name">Sentinel</div><div class="prot-desc">Logs de surveillance dans un salon dédié configurable.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">permban</div><div><div class="prot-name">Ban Permanent</div><div class="prot-desc">Re-ban automatique si un utilisateur blacklisté tente de revenir.</div></div><div class="prot-on">actif</div></div>
+    <div class="prot-row"><div class="prot-key">whitelist</div><div><div class="prot-name">Whitelist</div><div class="prot-desc">Membres exemptés de l'intégralité des protections automatiques.</div></div><div class="prot-on">actif</div></div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ CREATOR ════ -->
+<section id="creator">
+  <div class="creator-section">
+    <div class="creator-visual rv">
+      <div class="creator-ring">
+        <div class="orbit-dot"></div>
+        <div>
+          <div class="creator-name">Noctavia</div>
+          <div class="creator-sub">créateur · développeur</div>
+        </div>
+      </div>
+    </div>
+    <div class="creator-content">
+      <div class="creator-label rv">05 — Créateur</div>
+      <div class="creator-title rv d1">
+        Conçu &amp; développé<br>par <em>Noctavia.</em>
+      </div>
+      <p class="creator-text rv d2">
+        QLM Bot est le résultat d'un travail de conception approfondi
+        autour des outils d'<strong>investigation numérique</strong> et de la
+        <strong>sécurité Discord</strong>. Chaque module a été pensé pour être
+        à la fois puissant, discret et précis.
+      </p>
+      <div class="creator-details rv d3">
+        <div class="creator-detail">
+          <span class="detail-k">Auteur</span>
+          <span class="detail-v rose">Noctavia</span>
+        </div>
+        <div class="creator-detail">
+          <span class="detail-k">Projet</span>
+          <span class="detail-v">QLM Bot — OSINT DarkBot</span>
+        </div>
+        <div class="creator-detail">
+          <span class="detail-k">Stack</span>
+          <span class="detail-v">Python 3.11 · discord.py · SQLite3 · aiohttp</span>
+        </div>
+        <div class="creator-detail">
+          <span class="detail-k">Version</span>
+          <span class="detail-v">3.0 — stable</span>
+        </div>
+        <div class="creator-detail">
+          <span class="detail-k">Préfixe</span>
+          <span class="detail-v rose">!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ DEMO ════ -->
+<section class="alt-bg" id="demo">
+  <div class="sec-label rv">06 — Demo</div>
+  <div class="sec-title rv d1">Voir pour<br><em>comprendre.</em></div>
+
+  <div class="term-wrap rv d2">
+    <div class="term-head">
+      <span class="term-id">qlmbot@discord · session live · noctavia</span>
+      <span class="term-live">connecté</span>
+    </div>
+    <div class="term-body">
+
+      <div><span class="tp">$</span> <span class="tc">!ip 8.8.8.8</span></div>
+      <div class="to"><span class="tk">pays        </span>  <span class="tv">United States (US)</span></div>
+      <div class="to"><span class="tk">ville       </span>  <span class="tv">Mountain View, CA</span></div>
+      <div class="to"><span class="tk">isp / org   </span>  <span class="tv">AS15169 GOOGLE</span></div>
+      <div class="to"><span class="tk">timezone    </span>  <span class="tv">America/Los_Angeles</span></div>
+
+      <div style="margin-top:14px"><span class="tp">$</span> <span class="tc">!sslcheck github.com</span></div>
+      <div class="to"><span class="tg">✓</span> <span class="tk">sujet       </span>  <span class="tv">github.com</span></div>
+      <div class="to"><span class="tg">✓</span> <span class="tk">émetteur    </span>  <span class="tv">DigiCert TLS Hybrid ECC SHA384</span></div>
+      <div class="to"><span class="tg">✓</span> <span class="tk">jours rest. </span>  <span class="tv">201 jours</span></div>
+
+      <div style="margin-top:14px"><span class="tp">$</span> <span class="tc">!sherlock noctavia</span></div>
+      <div class="to tdim">▶ analyse de 28 sites...</div>
+      <div class="to"><span class="tg">✓</span> <span class="tv">github.com/noctavia</span></div>
+      <div class="to"><span class="tg">✓</span> <span class="tv">twitter.com/noctavia</span></div>
+      <div class="to"><span class="tg">✓</span> <span class="tv">dev.to/noctavia</span></div>
+      <div class="to tdim">→  3 profils trouvés sur 28 sites</div>
+
+      <div style="margin-top:14px"><span class="tp">$</span> <span class="tc">!protectstatus</span></div>
+      <div class="to"><span class="tg">◈</span> <span class="tk">antispam    </span>  <span class="tr">ON</span>  <span class="tdim">·</span>  <span class="tg">◈</span> <span class="tk">antiphish   </span>  <span class="tr">ON</span></div>
+      <div class="to"><span class="tg">◈</span> <span class="tk">antinuke    </span>  <span class="tr">ON</span>  <span class="tdim">·</span>  <span class="tg">◈</span> <span class="tk">sentinel    </span>  <span class="tr">ON</span></div>
+      <div class="to tdim">whitelist : 3 membres  ·  bots autorisés : 2</div>
+
+      <div style="margin-top:14px"><span class="tp">$</span> <span class="tc"><span class="tcur"></span></span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="hr">
+
+<!-- ════ FOOTER ════ -->
+<footer>
+  <div>
+    <span class="foot-brand">QLM<em>·</em><br>Bot</span>
+    <div class="foot-by">by <span>Noctavia</span></div>
+  </div>
+  <div class="foot-col">
+    <div class="foot-col-h">Modules</div>
+    <ul>
+      <li><span>01</span> URL Analysis</li>
+      <li><span>02</span> Domain & DNS</li>
+      <li><span>03</span> IP Intelligence</li>
+      <li><span>04</span> OSINT General</li>
+      <li><span>05</span> Anonymat</li>
+      <li><span>06</span> Sécurité</li>
+      <li><span>07</span> Discord Tools</li>
+      <li><span>08</span> GitHub OSINT</li>
+      <li><span>09</span> Investigations</li>
+    </ul>
+  </div>
+  <div class="foot-col">
+    <div class="foot-col-h">Système</div>
+    <ul>
+      <li><span>—</span> Python 3.11</li>
+      <li><span>—</span> discord.py</li>
+      <li><span>—</span> SQLite 3</li>
+      <li><span>—</span> aiohttp</li>
+      <li><span>—</span> Préfixe : !</li>
+      <li><span>—</span> Version 3.0</li>
+    </ul>
+    <div style="margin-top:28px">
+      <a href="#" style="font-family:var(--mono);font-size:9px;letter-spacing:.25em;color:var(--rose);text-decoration:none;text-transform:uppercase;border-bottom:1px solid rgba(201,160,180,.3);padding-bottom:2px;">Ajouter sur Discord →</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div class="foot-copy">QLM Bot · OSINT · Cybersécurité · Gestion Discord · Créé par Noctavia</div>
+    <div class="foot-jp">調査システム · v3.0 · noctavia</div>
+  </div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.07 });
+document.querySelectorAll('.rv').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
